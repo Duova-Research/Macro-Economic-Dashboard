@@ -1,0 +1,19 @@
+{
+  "_comment": "AWS EventBridge rule — triggers the Lambda daily at 06:00 UTC.",
+  "_deploy": "Apply with: aws events put-rule --cli-input-json file://eventbridge.json",
+
+  "Name": "macro-dashboard-daily-fetch",
+  "Description": "Triggers FRED data pull Lambda every day at 06:00 UTC",
+
+  "ScheduleExpression": "cron(0 6 * * ? *)",
+
+  "State": "ENABLED",
+
+  "Targets": [
+    {
+      "Id": "MacroDashboardFetcherLambda",
+      "Arn": "arn:aws:lambda:REGION:ACCOUNT_ID:function:macro-dashboard-fetcher",
+      "_note": "Replace REGION and ACCOUNT_ID with your AWS values before deploying"
+    }
+  ]
+}

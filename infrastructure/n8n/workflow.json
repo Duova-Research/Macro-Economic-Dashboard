@@ -1,0 +1,88 @@
+{
+  "_comment": "n8n workflow — import via n8n UI: Workflows → Import from File",
+  "_description": "Calls the FastAPI /refresh endpoint on a daily schedule at 06:00.",
+  "_setup": [
+    "1. In n8n, go to Settings → Credentials and add your API secret as a Header Auth credential",
+    "2. Import this file via Workflows → Import",
+    "3. Update the 'API URL' node to point to your deployed FastAPI server",
+    "4. Activate the workflow"
+  ],
+
+  "name": "Macro Dashboard — Daily FRED Refresh",
+  "nodes": [
+    {
+      "id": "schedule-trigger",
+      "name": "Daily 06:00 UTC",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [200, 300],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 6 * * *"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "http-refresh",
+      "name": "POST /refresh",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [420, 300],
+      "parameters": {
+        "method": "POST",
+        "url": "http://YOUR_SERVER_IP:8000/refresh",
+        "_note": "Replace YOUR_SERVER_IP with your EC2 public IP or domain",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Refresh-Secret",
+              "value": "={{ $env.REFRESH_SECRET }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000
+        }
+      }
+    },
+    {
+      "id": "success-log",
+      "name": "Log Result",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3,
+      "position": [640, 300],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "name": "status",
+              "value": "={{ $json.refreshed }} series refreshed at {{ $json.timestamp }}",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Daily 06:00 UTC": {
+      "main": [
+        [{ "node": "POST /refresh", "type": "main", "index": 0 }]
+      ]
+    },
+    "POST /refresh": {
+      "main": [
+        [{ "node": "Log Result", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
